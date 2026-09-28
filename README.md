@@ -41,7 +41,7 @@ Open the local address printed by Vite. To use the development preview address s
 npm run dev -- --port 5180 --strictPort
 ```
 
-The application runs in the browser. No account, API key or backend is required.
+The local application runs in the browser with no account, API key or backend. The hosted Higgsfield URL currently requires platform sign-in; see Deployment below.
 
 | Command | Purpose |
 | --- | --- |
@@ -129,6 +129,8 @@ Built with **Three.js, TypeScript and Vite**. Tests use **Vitest**.
 ## Deployment
 
 The app is hosted on **Higgsfield Supercomputer** at [observable-colony.higgsfield.app](https://observable-colony.higgsfield.app).
+
+**Hosted access:** Higgsfield reported a successful deployment on September 29, 2026. An unauthenticated browser is redirected to Higgsfield sign-in, and unauthenticated asset/API requests return HTTP 401. This access gate belongs to the hosting platform; the colony itself has no login flow. Authenticated live interaction checks remain unverified. The site is not listed on the community feed.
 
 - **Source of truth:** this GitHub repository.
 - **Higgsfield website ID:** `ea896f71-8737-4f21-b26d-b3fbc96b4153`.
