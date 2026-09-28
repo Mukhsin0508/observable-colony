@@ -3,6 +3,14 @@ import type { Ant, ColonySnapshot, NestNode, SurfaceTrail, Tunnel, Vec3 } from '
 type Waypoint = { position: Vec3; nodeId: number | null; tunnelId: number | null };
 type Task = 'wandering' | 'approaching dig' | 'digging' | 'returning soil' | 'outbound' | 'returning food' | 'nursing' | 'surface search' | 'surface return';
 type Brain = { nodeId: number; previousNode: number; task: Task; route: Waypoint[]; digId: number | null; workLeft: number; rest: number; speed: number; surfaceAngle: number; searchTimer: number };
+export interface AntTelemetry {
+  ahead: number;
+  left: number;
+  right: number;
+  depositing: boolean;
+  /** Nearby agents within 0.55 model units, not decoded messages. */
+  localNeighbors: number;
+}
 const TICK = 0.05;
 const MAX_TUNNELS = 40;
 const FIELD_SPACING = 0.3;
@@ -36,20 +44,45 @@ export class ColonySimulation {
 
   /** Draw a bounded sample of the demographic model's workers; keep existing paths intact. */
   setPopulation(population: number): void {
+    if (!Number.isFinite(population)) return;
     const count = Math.max(0, Math.min(110, Math.floor(population)));
     if (count === this.ants.length) return;
     if (count < this.ants.length) {
       this.ants.length = count; this.brains.length = count; this.contactCooldowns.clear();
       return;
     }
+    const distribute = count - this.ants.length > 16;
+    const open = this.tunnels.filter(tunnel => tunnel.progress === 1);
     for (let id = this.ants.length; id < count; id++) {
       const role = id % 10 < 4 ? 'excavator' : id % 10 < 8 ? 'forager' : 'nurse';
-      const position = copy(this.node(1).position);
-      position.x += (this.random() - 0.5) * 0.5;
-      const ant: Ant = { id, role, state: role === 'forager' ? 'seeking food' : role === 'nurse' ? 'tending brood' : 'exploring', position, heading: { x: 0, y: 1, z: 0 }, carrying: false, tunnelId: null };
-      const brain: Brain = { nodeId: 1, previousNode: 0, task: role === 'forager' ? 'outbound' : role === 'nurse' ? 'nursing' : 'wandering', route: role === 'forager' ? this.route(1, 0) : [], digId: null, workLeft: 0, rest: this.random(), speed: 0.8 + this.random() * 0.45, surfaceAngle: this.random() * Math.PI * 2, searchTimer: 0 };
+      // A large chapter jump represents an existing workforce, so distribute it along
+      // already-open routes. Individual births still begin inside the founding chamber.
+      const edge = distribute && role !== 'nurse' ? open[(id * 7) % open.length] : undefined;
+      const nodeId = edge?.to ?? 1;
+      const position = edge
+        ? this.lanePoint(interpolate(this.node(edge.from).position, this.node(edge.to).position, 0.07 + ((id * 0.61803398875) % 1) * 0.86), edge.id, id)
+        : this.chamberPosition(id, 1);
+      const route = edge ? [this.waypoint(edge.to, edge.id)] : [];
+      if (role === 'forager') route.push(...this.route(nodeId, 0));
+      const ant: Ant = { id, role, state: role === 'forager' ? 'seeking food' : role === 'nurse' ? 'tending brood' : 'exploring', position, heading: { x: 0, y: 1, z: 0 }, carrying: false, tunnelId: edge?.id ?? null };
+      const brain: Brain = { nodeId, previousNode: edge?.from ?? 0, task: role === 'forager' ? 'outbound' : role === 'nurse' ? 'nursing' : 'wandering', route, digId: null, workLeft: 0, rest: this.random() * 1.6, speed: 0.8 + this.random() * 0.45, surfaceAngle: this.random() * Math.PI * 2, searchTimer: 0 };
       this.ants.push(ant); this.brains.push(brain);
     }
+  }
+
+  /** Read the same local surface field used by steering; never advances the model. */
+  inspectAnt(id: number): AntTelemetry | null {
+    if (!Number.isInteger(id)) return null;
+    const ant = this.ants[id];
+    const brain = this.brains[id];
+    if (!ant || !brain) return null;
+    const onSurface = brain.task === 'surface search' || brain.task === 'surface return';
+    const readings = onSurface ? this.sensors(ant.position, brain.surfaceAngle) : { ahead: 0, left: 0, right: 0 };
+    return {
+      ...readings,
+      depositing: brain.task === 'surface return',
+      localNeighbors: this.ants.reduce((count, other) => count + (other.id !== id && distance(ant.position, other.position) < 0.55 ? 1 : 0), 0),
+    };
   }
 
   reset(seed = this.seed): void {
@@ -78,7 +111,7 @@ export class ColonySimulation {
     for (let id = 0; id < 65; id++) {
       const role = id < 30 ? 'excavator' : id < 55 ? 'forager' : 'nurse';
       const edge = this.tunnels[id % 3]!;
-      const start = interpolate(this.node(edge.from).position, this.node(edge.to).position, this.random());
+      const start = this.lanePoint(interpolate(this.node(edge.from).position, this.node(edge.to).position, this.random()), edge.id, id);
       const ant: Ant = { id, role, state: role === 'forager' ? 'seeking food' : role === 'nurse' ? 'tending brood' : 'exploring', position: start, heading: { x: 0, y: 1, z: 0 }, carrying: false, tunnelId: edge.id };
       this.ants.push(ant);
       const brain: Brain = { nodeId: edge.to, previousNode: edge.from, task: role === 'forager' ? 'outbound' : role === 'nurse' ? 'nursing' : 'wandering', route: [this.waypoint(edge.to, edge.id)], digId: null, workLeft: 0, rest: 0, speed: 0.8 + this.random() * 0.45, surfaceAngle: (this.random() < 0.5 ? 0 : Math.PI) + (this.random() - 0.5) * 0.7, searchTimer: 0 };
@@ -127,6 +160,37 @@ export class ColonySimulation {
   private waypoint(nodeId: number, tunnelId: number | null): Waypoint { return { position: copy(this.node(nodeId).position), nodeId, tunnelId }; }
   private record(event: string): void { this.events = [event, ...this.events].slice(0, 5); }
 
+  /** Small deterministic lanes fit inside the 0.38-radius illustrated tunnels. */
+  private lanePoint(position: Vec3, tunnelId: number, antId: number): Vec3 {
+    const tunnel = this.tunnels[tunnelId]!;
+    const from = this.node(tunnel.from).position;
+    const to = this.node(tunnel.to).position;
+    const planarLength = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+    const lane = ((antId * 0.61803398875) % 1 - 0.5) * 0.3;
+    return {
+      x: position.x - (to.y - from.y) / planarLength * lane,
+      y: position.y + (to.x - from.x) / planarLength * lane,
+      z: position.z + ((antId * 0.41421356237) % 1 - 0.5) * 0.06,
+    };
+  }
+
+  private chamberPosition(antId: number, nodeId: number): Vec3 {
+    const chamber = this.node(nodeId);
+    const angle = antId * 2.3999632297 + (this.seed % 1000) * 0.01;
+    const radius = chamber.radius * (0.25 + 0.53 * Math.sqrt((antId * 0.75487766625) % 1));
+    return {
+      x: chamber.position.x + Math.cos(angle) * radius,
+      y: chamber.position.y + Math.sin(angle) * radius * 0.48,
+      z: chamber.position.z + ((antId * 0.56984029099) % 1 - 0.5) * 0.14,
+    };
+  }
+
+  private sensors(position: Vec3, angle: number): Pick<AntTelemetry, 'ahead' | 'left' | 'right'> {
+    const sense = (heading: number): number => this.sample(position.x + Math.cos(heading) * 0.7, position.z + Math.sin(heading) * 0.7);
+    return { ahead: sense(angle), left: sense(angle - 0.65), right: sense(angle + 0.65) };
+  }
+
+
   private tick(dt: number): void {
     this.elapsed += dt;
     const evaporation = Math.exp(-0.045 * dt);
@@ -155,11 +219,12 @@ export class ColonySimulation {
     if (brain.rest > 0) { brain.rest -= dt; return; }
     if (brain.route.length) {
       const next = brain.route[0]!;
-      const length = distance(ant.position, next.position);
+      const target = next.tunnelId === null ? next.position : this.lanePoint(next.position, next.tunnelId, ant.id);
+      const length = distance(ant.position, target);
       ant.tunnelId = next.tunnelId;
       if (length > 0.00001) {
-        ant.heading = { x: (next.position.x - ant.position.x) / length, y: (next.position.y - ant.position.y) / length, z: (next.position.z - ant.position.z) / length };
-        ant.position = interpolate(ant.position, next.position, Math.min(1, brain.speed * dt / length));
+        ant.heading = { x: (target.x - ant.position.x) / length, y: (target.y - ant.position.y) / length, z: (target.z - ant.position.z) / length };
+        ant.position = interpolate(ant.position, target, Math.min(1, brain.speed * dt / length));
       }
       if (ant.tunnelId !== null) {
         const tunnel = this.tunnels[ant.tunnelId]!;
@@ -167,7 +232,7 @@ export class ColonySimulation {
         if (ant.state === 'carrying food') tunnel.pheromone = Math.min(1, tunnel.pheromone + dt * 0.3);
       }
       if (length <= brain.speed * dt) {
-        ant.position = copy(next.position);
+        ant.position = copy(target);
         if (next.nodeId !== null) { brain.previousNode = brain.nodeId; brain.nodeId = next.nodeId; }
         brain.route.shift();
       }
@@ -194,7 +259,7 @@ export class ColonySimulation {
       if (fronts.length) {
         const front = fronts[Math.floor(this.random() * fronts.length)]!;
         brain.digId = front.id; brain.task = 'approaching dig'; ant.state = 'exploring';
-        brain.route = [{ position: interpolate(this.node(front.from).position, this.node(front.to).position, front.progress), nodeId: null, tunnelId: front.id }];
+        brain.route = [this.waypoint(brain.nodeId, front.id), { position: interpolate(this.node(front.from).position, this.node(front.to).position, front.progress), nodeId: null, tunnelId: front.id }];
         return;
       }
     }
@@ -210,7 +275,7 @@ export class ColonySimulation {
     const choices = fresh.length && this.random() > 0.12 ? fresh : connected;
     if (!choices.length) return;
     const next = choices[Math.floor(this.random() * choices.length)]!;
-    brain.route = [this.waypoint(next.from === brain.nodeId ? next.to : next.from, next.id)];
+    brain.route = [this.waypoint(brain.nodeId, next.id), this.waypoint(next.from === brain.nodeId ? next.to : next.from, next.id)];
   }
 
   /** Three forward sensors sample only the nearby trail; food is detected by proximity. */
@@ -226,6 +291,7 @@ export class ColonySimulation {
         return;
       }
       ant.heading = { x: -ant.position.x / length, y: 0, z: -ant.position.z / length };
+      brain.surfaceAngle = Math.atan2(ant.heading.z, ant.heading.x);
       ant.position.x += ant.heading.x * brain.speed * dt;
       ant.position.z += ant.heading.z * brain.speed * dt;
       return;
@@ -235,10 +301,7 @@ export class ColonySimulation {
       return;
     }
     brain.searchTimer += dt;
-    const sense = (angle: number): number => this.sample(ant.position.x + Math.cos(angle) * 0.7, ant.position.z + Math.sin(angle) * 0.7);
-    const front = sense(brain.surfaceAngle);
-    const left = sense(brain.surfaceAngle - 0.65);
-    const right = sense(brain.surfaceAngle + 0.65);
+    const { ahead: front, left, right } = this.sensors(ant.position, brain.surfaceAngle);
     // A small persistent exploration component prevents an abandoned trail trapping the colony.
     if (Math.max(front, left, right) > 0.005 && this.random() > 0.15) {
       if (left > front && left > right) brain.surfaceAngle -= 2.1 * dt;
@@ -295,8 +358,9 @@ export class ColonySimulation {
       tunnel.traffic = Math.min(1, tunnel.traffic + dt * 0.2);
       if (tunnel.progress === 1) { this.record('A passage opens. Workers explore the new edge.'); this.extend(tunnel.to); }
     }
-    ant.position = interpolate(from, to, tunnel.progress);
     const length = distance(from, to);
+    const backoff = Math.min(tunnel.progress * length, ((ant.id * 0.38196601125) % 1) * 0.22);
+    ant.position = this.lanePoint(interpolate(from, to, Math.max(0, tunnel.progress - backoff / length)), tunnel.id, ant.id);
     ant.heading = { x: (to.x - from.x) / length, y: (to.y - from.y) / length, z: (to.z - from.z) / length };
     ant.tunnelId = tunnel.id;
     brain.workLeft -= dt;
@@ -345,7 +409,7 @@ export class ColonySimulation {
           const result: Waypoint[] = [];
           let at = end;
           while (at !== start) { const via = visited.get(at)!; result.unshift(this.waypoint(at, via.tunnel)); at = via.node; }
-          return result;
+          return [this.waypoint(start, result[0]!.tunnelId), ...result];
         }
         queue.push(next);
       }

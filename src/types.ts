@@ -7,6 +7,6 @@ export interface Ant { id: number; role: Role; state: AntState; position: Vec3; 
 export interface ColonyStats { elapsed: number; excavated: number; foodCollected: number; contacts: number; activeDiggers: number; }
 export interface SurfaceTrail { position: Vec3; intensity: number; }
 export interface ColonySnapshot { nodes: NestNode[]; tunnels: Tunnel[]; ants: Ant[]; food: Vec3; surfaceTrails: SurfaceTrail[]; stats: ColonyStats; events: string[]; seed: number; }
-export type ViewMode = 'cutaway' | 'orbit' | 'follow' | 'queen';
-export interface UIState { paused: boolean; speed: number; signals: boolean; view: ViewMode; selectedAnt: number | null; }
+export type ViewMode = 'cutaway' | 'orbit' | 'follow' | 'queen' | 'surface' | 'immersive';
+export interface UIState { paused: boolean; speed: number; signals: boolean; view: ViewMode; selectedAnt: number | null; guided?: boolean; }
 export interface UIActions { togglePause(): void; setSpeed(speed: number): void; toggleSignals(): void; setView(view: ViewMode): void; reset(): void; moveFood(): void; selectAnt(): void; }

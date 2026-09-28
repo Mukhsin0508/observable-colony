@@ -68,6 +68,70 @@ describe('colony model', () => {
     expect(after.surfaceTrails.every(t => t.intensity > 0 && t.intensity <= 1)).toBe(true);
   });
 
+  it('spreads a new representative workforce without duplicate spawn positions', () => {
+    const a = new ColonySimulation(42);
+    const b = new ColonySimulation(42);
+    for (const model of [a, b]) { model.setPopulation(0); model.setPopulation(110); }
+    const snapshot = a.snapshot();
+    expect(snapshot).toEqual(b.snapshot());
+    expect(snapshot.ants).toHaveLength(110);
+    const positions = snapshot.ants.map(ant => Object.values(ant.position).map(value => value.toFixed(6)).join(','));
+    expect(new Set(positions).size).toBe(110);
+    expect(new Set(snapshot.ants.map(ant => ant.role)).size).toBe(3);
+    // Populations larger than the rendering budget keep the same representative agents.
+    a.setPopulation(10_000);
+    expect(a.snapshot()).toEqual(snapshot);
+    a.step(120);
+    for (let frame = 0; frame < 1200; frame++) b.step(0.1);
+    expect(a.snapshot()).toEqual(b.snapshot());
+    expect(a.snapshot().ants.every(ant => Object.values(ant.position).every(Number.isFinite))).toBe(true);
+  });
+
+  it('keeps small births in the chamber and ignores invalid population values', () => {
+    const model = new ColonySimulation(5);
+    model.setPopulation(0); model.setPopulation(11);
+    const snapshot = model.snapshot();
+    const chamber = snapshot.nodes[1]!;
+    for (const ant of snapshot.ants) {
+      expect(Math.hypot(ant.position.x - chamber.position.x, ant.position.y - chamber.position.y, ant.position.z - chamber.position.z)).toBeLessThan(chamber.radius);
+    }
+    model.setPopulation(NaN); model.setPopulation(Infinity); model.setPopulation(-Infinity);
+    expect(model.snapshot()).toEqual(snapshot);
+    model.setPopulation(-1);
+    expect(model.snapshot().ants).toHaveLength(0);
+    expect(model.inspectAnt(0)).toBeNull();
+  });
+
+  it('reports actual local sensor and deposition states without mutating the model', () => {
+    const model = new ColonySimulation(22);
+    expect(model.inspectAnt(-1)).toBeNull();
+    expect(model.inspectAnt(1.5)).toBeNull();
+    expect(model.inspectAnt(10_000)).toBeNull();
+    let sawReturn = false;
+    let sawChemicalReading = false;
+    for (let frame = 0; frame < 180; frame++) {
+      model.step(0.5);
+      const snapshot = model.snapshot();
+      for (const ant of snapshot.ants) {
+        const reading = model.inspectAnt(ant.id)!;
+        expect([reading.ahead, reading.left, reading.right].every(value => Number.isFinite(value) && value >= 0 && value <= 1)).toBe(true);
+        const neighbors = snapshot.ants.filter(other => other.id !== ant.id && Math.hypot(other.position.x - ant.position.x, other.position.y - ant.position.y, other.position.z - ant.position.z) < 0.55).length;
+        expect(reading.localNeighbors).toBe(neighbors);
+        if (ant.position.y < 0) expect(reading).toMatchObject({ ahead: 0, left: 0, right: 0, depositing: false });
+        if (reading.depositing) {
+          sawReturn = true;
+          expect(ant.state).toBe('carrying food');
+          expect(ant.position.y).toBe(0.25);
+          expect(ant.tunnelId).toBeNull();
+        }
+        if (Math.max(reading.ahead, reading.left, reading.right) > 0) sawChemicalReading = true;
+      }
+      expect(model.snapshot()).toEqual(snapshot);
+    }
+    expect(sawReturn).toBe(true);
+    expect(sawChemicalReading).toBe(true);
+  });
+
   it('returns independent snapshots and ignores invalid time deltas', () => {
     const model = new ColonySimulation();
     const before = model.snapshot();

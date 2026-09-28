@@ -28,13 +28,16 @@ npm run preview
 
 ## Explore the living colony
 
-- Choose a chapter from founding to the next generation, or play through model time.
+- Start **Take a guided journey** for an eleven-chapter introduction, from the founding queen to the recorded excavation. Use **Autoplay**, **Next chapter** and **Previous chapter**, or leave the journey to explore freely. Guided chapters jump to authored points in model time; they do not depict a continuous, observed lifetime.
+- Outside the guided journey, choose a lifecycle chapter from founding to the next generation, or play through model time.
 - Visit the queen and see a representative sample of developing brood.
-- Follow a worker, inspect the nest in cutaway, or orbit around it.
+- Switch between **Surface**, **Inside worker**, **Queen** and **Nest** views, follow a selected worker, or orbit around the colony. The worker camera explains movement; it does not reconstruct ant vision.
+- In Surface and Inside worker views, inspect the selected worker's actual local scent samples, scent deposition state and nearby-worker count. Surface scent sensors are inactive underground. These are live values from the illustrative model, not measured biology or decoded messages.
 - Reveal the surface pheromone field. Returning food carriers deposit scent; searching ants steer from local samples while continuing to explore.
 - Move the food. Ants are not told its new location: they must discover it nearby, while the old trail fades.
 - Apply **Queen loss** to stop new egg laying, then watch existing brood and worker cohorts change. **Restore queen** is a counterfactual control, not a natural replacement mechanism.
-- Pause, accelerate or restart the journey. Chapter selection pauses at that point. Devices requesting reduced motion start paused.
+- Use **Focus** to hide the surrounding interface while keeping an exit available.
+- Pause, accelerate or restart. Selecting a lifecycle chapter outside the guided journey pauses at that point. Devices requesting reduced motion start paused, with guided autoplay off.
 
 Population counts come from a seeded cohort model. The scene draws at most **110 representative workers** and a limited brood sample, so a modeled colony with thousands of ants stays usable on a laptop or phone. These drawn ants are not a one-to-one record of every modeled adult.
 
