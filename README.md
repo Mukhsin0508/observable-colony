@@ -130,7 +130,7 @@ Built with **Three.js, TypeScript and Vite**. Tests use **Vitest**.
 
 The app is hosted on **Higgsfield Supercomputer** at [observable-colony.higgsfield.app](https://observable-colony.higgsfield.app).
 
-**Hosted access:** Higgsfield reported a successful deployment on September 29, 2026. An unauthenticated browser is redirected to Higgsfield sign-in, and unauthenticated asset/API requests return HTTP 401. This access gate belongs to the hosting platform; the colony itself has no login flow. Authenticated live interaction checks remain unverified. The site is not listed on the community feed.
+**Hosted access:** Higgsfield reported a successful deployment on September 29, 2026. An unauthenticated browser is redirected to Higgsfield sign-in, and unauthenticated asset/API requests return HTTP 401. This access gate belongs to the hosting platform; the colony itself has no login flow. Authenticated Chrome verification passed: the 3D colony renders, the guided journey advances, and the measured view loads all 52 scans with 5,174 grain removals. No page errors were reported during these checks. The site is not listed on the community feed.
 
 - **Source of truth:** this GitHub repository.
 - **Higgsfield website ID:** `ea896f71-8737-4f21-b26d-b3fbc96b4153`.
