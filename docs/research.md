@@ -1,81 +1,100 @@
-# Research notes
+# Research overview
 
-Reviewed on 29 September 2026. These are primary research sources. Each supports a specific idea; none validates Observable Colony as a whole.
+Reviewed on 29 September 2026. Observable Colony separates an **illustrative living-colony model** from a **measured excavation view**. The archived excavation does not validate the lifecycle or procedural colony, and the procedural colony is not a replay of tracked ants.
 
-## 1. Building a tunnel in three dimensions
+## The measured excavation
 
 **Buarque de Macedo et al. (2021), _Unearthing real-time 3D ant tunneling mechanics_. PNAS 118, e2102267118.**
 
 - Species: **Pogonomyrmex occidentalis**.
-- Setting: groups of 15 workers excavating a moist granular substrate, imaged repeatedly with X-ray computed tomography. The analysis combines measured grain geometry and removal with a mechanical simulation.
-- Finding relevant here: tunnels tended to progress in approximately straight segments; workers showed a preference for smaller grains. Granular arching reduced forces near the tunnel surface, suggesting stability need not require ants to identify the surrounding force network.
-- Boundary: these results are not a general blueprint for every species, soil or mature nest. Our procedural tunnels do not reproduce the measured geometry, grain forces or excavation chronology.
+- Setting: groups of 15 workers excavating a moist granular substrate, imaged repeatedly with X-ray computed tomography. The study combined measured grain geometry and removal with a mechanical simulation.
+- Relevant findings: approximately straight tunnel segments, a preference for smaller grains, and granular arching that reduced forces near the tunnel surface.
+- Implemented data view: Experiment 1 initial image-derived grain centroids and scan-assigned removal flags from the authors' CC0 CaltechDATA archive. The processed sequence contains 52 source-sequence frames and 5,174 removals; all removed grains are retained and unchanged context is thinned.
+- Boundary: displayed spheres mark centroids; their size and color are illustrative. Scan order resolves a sequence of observations, not a continuous record of each removal action. The view does not contain observed ant trajectories, pheromone measurements, brood histories or the full colony lifecycle. Procedural tunnel growth in the other view does not reproduce the experiment's mechanical solver.
 
-[Paper and DOI](https://doi.org/10.1073/pnas.2102267118) · [Authors' full-text copy](https://mech-meta-lab.engr.tamu.edu/wp-content/uploads/sites/327/2025/04/ants_pnas.pdf) · [Deposited data and code](https://doi.org/10.22002/D1.1996)
+[Paper and DOI](https://doi.org/10.1073/pnas.2102267118) · [Authors' full-text copy](https://mech-meta-lab.engr.tamu.edu/wp-content/uploads/sites/327/2025/04/ants_pnas.pdf) · [Data archive](https://doi.org/10.22002/D1.1996)
 
-## 2. Contacts can help regulate excavation
+The [measured-data notes](measured-data.md) document the selected files, processing, coordinates and chronology. Display playback speed must not be interpreted as an inferred biological rate.
+
+## The living-colony journey
+
+The journey starts with one mated queen and no workers. Cohorts pass through egg, larval and pupal stages before adults emerge. Later chapters show population growth and winged reproductives. Queen loss is a deliberate user intervention; the model does not schedule a natural death age.
+
+The species framing is **P. occidentalis**, but all stage dates and demographic rates are illustrative. Primary field work supports single-queen founding, substantial founding mortality, long-lived colonies and variable reproductive maturity. It does not provide a single universal clock for the interface. For example, Cole and Wiernasz's reproductive study found a size threshold that varied between years, and the authors' longer-term work shows why age alone is insufficient.
+
+[Colony size and reproduction, primary paper](https://link.springer.com/article/10.1007/PL00001711) · [Ontogeny study, authors' full text](https://harvester-ants.com/wp-content/uploads/2023/10/wiernasz-cole-2022-proof.pdf)
+
+The [lifecycle notes](lifecycle.md) provide the complete source assessment, numerical parameters, cohort rules and omissions. They also distinguish a modeled successful founding from the much less certain outcome facing a wild queen.
+
+## Behavior concepts drawn from other species
+
+These studies motivate questions and visual explanations. Their findings must not be relabeled as measurements of the P. occidentalis journey.
+
+### Contacts and excavation
 
 **Avinery et al. (2023), _Agitated ants: regulation and self-organization of incipient nest excavation via collisional cues_. Journal of the Royal Society Interface 20, 20220597.**
 
 - Species: **Solenopsis invicta**.
-- Setting: workers excavating moist glass beads in a thin, quasi-two-dimensional arena.
-- Finding relevant here: excavation rates changed over time. A model with local collision history and work/rest behavior reproduced the observed progression, suggesting a possible decentralized regulatory mechanism.
-- Boundary: the proposed internal “agitation” variable is a modeling explanation, not a direct readout of an ant's mental state. The paper's model excludes branch formation and tunnel-width variation. This prototype only counts nearby encounters; it does not implement the paper's collision-history regulation.
+- Setting: excavation of moist glass beads in a thin, quasi-two-dimensional arena.
+- Relevant finding: a model using collision history and work/rest behavior reproduced the observed progression of excavation, suggesting a decentralized regulatory mechanism.
+- Boundary: the proposed internal agitation variable is a model explanation, not a direct mental-state readout. The paper excludes branch formation and tunnel-width variation. Our model only counts nearby encounters; it does not implement that collision-history mechanism.
 
 [Paper and DOI](https://doi.org/10.1098/rsif.2022.0597) · [Authors' full-text copy](https://crablab.gatech.edu/pages/publications/pdf/ram_interface_2023.pdf) · [Deposited data and code](https://doi.org/10.6084/m9.figshare.22649689.v1)
 
-## 3. Local chemical information can form trails
+### Local chemical information and trails
 
 **Perna et al. (2012), _Individual rules for trail pattern formation in Argentine ants (Linepithema humile)_. PLOS Computational Biology 8, e1002592.**
 
 - Species: **Linepithema humile**.
-- Setting: ants exploring an initially empty arena; the study estimated pheromone distribution from their trajectories.
-- Finding relevant here: turning correlated with nearby pheromone differences. An individual response based on the difference relative to the total concentration generated collective trails in simulations.
-- Boundary: the study did not directly image glowing pheromones. Our three-sensor surface steering, trail decay and food-return behavior are simplified implementation choices; we do not reproduce the paper's continuous response function or claim its measured parameters.
+- Setting: exploration of an initially empty arena, with pheromone distribution estimated from trajectories.
+- Relevant finding: turns correlated with nearby pheromone differences. A response using relative concentration differences generated collective trails in simulations.
+- Boundary: the study did not photograph glowing pheromones. Our three-sensor steering, grid, evaporation rate and food-return deposition are authored approximations. We do not reproduce its fitted response function or measured parameters.
 
 [Open paper](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1002592) · [Preprint](https://arxiv.org/abs/1201.5827)
 
-## 4. Where an ant works shapes who it meets
+### Spatial organization and encounters
 
 **Mersch, Crespi and Keller (2013), _Tracking individuals shows spatial fidelity is a key regulator of ant social organization_. Science 340, 1090–1093.**
 
 - Species: **Camponotus fellah**.
-- Setting: tagged workers in six colonies, tracked over 41 days.
-- Finding relevant here: spatial behavior and age were associated with distinct social/task groups and their interaction patterns.
-- Boundary: our fixed role labels are an interface and simulation simplification. We do not simulate the paper's age-dependent transitions, reconstruct its interaction network or replay its tracked animals.
+- Setting: tagged workers in six colonies tracked over 41 days.
+- Relevant finding: spatial behavior and age were associated with social/task groups and their interaction patterns.
+- Boundary: the current role assignments are authored. Brood development and adult cohort turnover in the lifecycle do not implement this paper's age-dependent task transitions. We do not load its tracked animals or reconstruct its social network.
 
 [Paper and DOI](https://doi.org/10.1126/science.1234316) · [Abstract](https://pubmed.ncbi.nlm.nih.gov/23599264/)
 
-## What is authored in this prototype
+## What is observed and what is authored
 
 | Element | Status |
 | --- | --- |
-| Ant positions and journeys | Computed model states, not tracked trajectories |
-| Colony population and worker roles | 65 workers with fixed assignments: 30 excavators, 25 foragers, 10 nurses |
-| Beginning of the experience | An authored starter nest with three open tunnels and two unfinished fronts; no queen-founding sequence |
-| Tunnel branches, chambers and growth limits | Procedural geometry; no measured nest reconstruction |
-| Surface pheromones | A decaying grid deposited by returning food carriers; searching ants sample forward, left and right |
-| Underground pheromones | A visual trace deposited along food-return routes; does not steer underground movement |
-| Encounters | Proximity counts with a cooldown; they do not change ant behavior |
-| Food relocation | Interactive intervention within the model |
-| Clock and speed controls | Simulation time with no biological calibration |
-| Soil appearance | Illustration; no granular mechanics solver |
-| Brood | Illustrative context; nurse movement does not simulate feeding, development or age transitions |
-
-“No individual has the whole plan” is the question this experience explores. Procedural branching alone is not evidence that a biologically accurate nest-building algorithm has been discovered. Any global routing or authored constraints in the implementation are engineering conveniences and must not be presented as abilities of real ants.
+| Measured-view grain coordinates and removal assignment | Derived from the Experiment 1 archive; see data provenance |
+| Measured-view colors, point sizes and camera | Illustrative display choices |
+| Individual ant positions and journeys | Computed movement-model states, not experimental trajectories |
+| Beginning of the living journey | An authored founding chamber containing one queen and no workers |
+| Brood and adult population counts | Seeded cohort model with illustrative timing and losses |
+| Visible workers | Up to 110 representative agents; not a one-to-one adult census |
+| Visible queen, eggs, larvae, pupae and alates | Illustrative anatomy and representative samples, not scans |
+| Worker roles | Authored assignments, not emergent division of labor |
+| Nest branches and chambers in the living view | Procedural geometry subject to space and size constraints |
+| Surface pheromones | Deposited grid with evaporation that affects local steering |
+| Underground pheromones | Deposited route trace; does not steer underground movement |
+| Encounters | Nearby-agent counts with a cooldown; no behavioral regulation |
+| Food relocation | Changes a model food source; not a demographic food-supply model |
+| Queen loss and restoration | Explicit counterfactual controls, not lifespan or replacement predictions |
+| Colony clock | Model days and years without biological calibration |
+| Measured-view chronology | Archived scan sequence; no invented timestamps |
+| Soil in the living view | Illustration, without grain mechanics or stability calculations |
 
 ## Implemented behavior and its limits
 
-Surface search is an interactive model, not a prerecorded path. Foragers read a scent grid at three positions near their heading, turn toward stronger samples, and retain random exploration. They detect food only within a fixed proximity. Food relocation does not tell searching ants where it moved. Returning workers deposit scent while heading directly toward the known entrance coordinates. This homing shortcut is an implementation assumption; it is not a reproduced sensory mechanism. The field evaporates over time but does not simulate diffusion, wind or a measured chemical concentration.
+Surface search is computed during interaction. Foragers sample scent at three nearby positions, turn toward stronger samples and retain exploratory movement. They detect food by proximity; moving food does not send them a new destination. Food carriers deposit scent while heading toward the known entrance position. This homing shortcut is an assumption, not a reproduced sensory mechanism. The grid evaporates, but does not simulate diffusion, wind or absolute chemical concentrations.
 
-Underground movement follows the authored tunnel graph. Returning workers use a shortest-path search; other workers choose among connected passages. Excavation increases a front's progress as workers dig there. Once a passage opens, seeded rules propose additional branches subject to bounds, spacing and a maximum of 40 tunnels. These rules determine the geometry; there is no soil-grain solver, mechanical stability test or discovered chamber-planning behavior. An ant marked as a nurse is assigned that role at initialization rather than acquiring it through emergent task allocation.
+Underground movement uses the procedural tunnel graph. Return paths use shortest-path navigation; exploration chooses connected passages. Digging workers increase a frontier's progress. Newly completed passages can create local branch proposals, subject to bounds, spacing and a maximum of 40 tunnels. That produces changing geometry without a complete prescribed nest blueprint, but it is not a grain-removal mechanics model or a validated account of chamber construction.
 
-## Path toward a measured experiment
+The lifecycle operates separately from those movement rules. Its cohorts genuinely mature and age out, while the renderer changes the representative workforce and brood. Food collection, proximity counts and excavation do not currently determine the demographic rates. Jumping chapters regenerates a seeded illustrative state rather than retrieving an observed colony at that age.
 
-1. Select one species and one experimental setup instead of combining studies.
-2. Inspect the corresponding deposited data, its license, units and experimental conditions.
-3. Define an observable target, such as tunnel length over time, excavation participation or turning response.
-4. Reproduce that target with a documented parameter set and compare multiple seeded runs with the measurements.
-5. Keep measured replay, calibrated simulation and free exploration visibly separate in the interface.
+“No individual has the whole plan” is the question the experience explores. Neither procedural branching nor the use of a real archive proves a biologically accurate colony-building algorithm. Global navigation shortcuts, worker assignments and authored limits must remain explicit.
 
-For the current version, describe the work as an **interactive, research-inspired ant colony**. Reserve “validated,” “digital twin,” and “experimental replay” for later work that establishes those claims.
+## Next scientific step
+
+Choose one experimentally observable mechanism and setting, fit documented parameters, then compare repeated seeded runs with measurements. Keep the existing grain-data view, any future calibrated model and the exploratory lifecycle visibly separate. Reserve “validated digital twin” and “full-life experimental replay” for work that establishes those claims.

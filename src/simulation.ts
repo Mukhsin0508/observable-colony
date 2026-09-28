@@ -34,6 +34,24 @@ export class ColonySimulation {
 
   constructor(seed = 1709) { this.reset(seed); }
 
+  /** Draw a bounded sample of the demographic model's workers; keep existing paths intact. */
+  setPopulation(population: number): void {
+    const count = Math.max(0, Math.min(110, Math.floor(population)));
+    if (count === this.ants.length) return;
+    if (count < this.ants.length) {
+      this.ants.length = count; this.brains.length = count; this.contactCooldowns.clear();
+      return;
+    }
+    for (let id = this.ants.length; id < count; id++) {
+      const role = id % 10 < 4 ? 'excavator' : id % 10 < 8 ? 'forager' : 'nurse';
+      const position = copy(this.node(1).position);
+      position.x += (this.random() - 0.5) * 0.5;
+      const ant: Ant = { id, role, state: role === 'forager' ? 'seeking food' : role === 'nurse' ? 'tending brood' : 'exploring', position, heading: { x: 0, y: 1, z: 0 }, carrying: false, tunnelId: null };
+      const brain: Brain = { nodeId: 1, previousNode: 0, task: role === 'forager' ? 'outbound' : role === 'nurse' ? 'nursing' : 'wandering', route: role === 'forager' ? this.route(1, 0) : [], digId: null, workLeft: 0, rest: this.random(), speed: 0.8 + this.random() * 0.45, surfaceAngle: this.random() * Math.PI * 2, searchTimer: 0 };
+      this.ants.push(ant); this.brains.push(brain);
+    }
+  }
+
   reset(seed = this.seed): void {
     this.seed = seed >>> 0;
     this.randomState = this.seed;
@@ -180,13 +198,19 @@ export class ColonySimulation {
         return;
       }
     }
+    if (ant.role === 'nurse') {
+      ant.state = 'tending brood'; brain.rest = 1 + this.random() * 2;
+      if (brain.nodeId !== 1) { brain.route = this.route(brain.nodeId, 1); return; }
+      const chamber = this.node(1);
+      brain.route = [{ position: { x: chamber.position.x + (this.random() - 0.5) * chamber.radius, y: chamber.position.y + (this.random() - 0.5) * chamber.radius * 0.55, z: chamber.position.z }, nodeId: 1, tunnelId: null }];
+      return;
+    }
     const connected = this.tunnels.filter(t => t.progress === 1 && (t.from === brain.nodeId || t.to === brain.nodeId));
     const fresh = connected.filter(t => (t.from === brain.nodeId ? t.to : t.from) !== brain.previousNode);
     const choices = fresh.length && this.random() > 0.12 ? fresh : connected;
     if (!choices.length) return;
     const next = choices[Math.floor(this.random() * choices.length)]!;
     brain.route = [this.waypoint(next.from === brain.nodeId ? next.to : next.from, next.id)];
-    if (ant.role === 'nurse') { ant.state = 'tending brood'; brain.rest = 1 + this.random() * 3; }
   }
 
   /** Three forward sensors sample only the nearby trail; food is detected by proximity. */

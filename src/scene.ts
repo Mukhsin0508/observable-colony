@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { Ant, ColonySnapshot, NestNode, Tunnel, UIState, Vec3, ViewMode } from './types';
+import type { LifecycleSnapshot } from './lifecycle';
+import { BiologyView } from './biology';
+import { MeasuredView } from './measured-view';
+import type { MeasuredStudy } from './study';
 
 const vector = (p: Vec3): THREE.Vector3 => new THREE.Vector3(p.x, p.y, p.z);
 const UP = new THREE.Vector3(0, 0, 1);
@@ -11,6 +15,10 @@ const ANT_LIMIT = 160;
 export class ColonyScene {
   readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
+  private readonly terrain = new THREE.Group();
+  private readonly biology = new BiologyView();
+  private measured: MeasuredView | null = null;
+  private measuredEnabled = false;
   private readonly camera = new THREE.PerspectiveCamera(41, 1, 0.05, 140);
   private readonly controls: OrbitControls;
   private readonly nest = new THREE.Group();
@@ -63,7 +71,7 @@ export class ColonyScene {
     this.scene.add(key);
     const rim = new THREE.DirectionalLight(0x8bd8d4, 1.4);
     rim.position.set(10, 3, -4);
-    this.scene.add(rim, this.nest, this.signalGroup, this.antLight);
+    this.scene.add(rim, this.nest, this.signalGroup, this.antLight, this.terrain, this.biology);
 
     const grain = this.makeSoilTexture();
     this.soilMaterial = new THREE.MeshStandardMaterial({ map: grain, color: 0x8a684b, roughness: 1, side: THREE.DoubleSide });
@@ -152,16 +160,16 @@ export class ColonyScene {
   private makeTerrain(texture: THREE.Texture): void {
     const slab = new THREE.Mesh(new THREE.BoxGeometry(25, 14, 3), new THREE.MeshStandardMaterial({ map: texture, color: 0x594c3c, roughness: 1 }));
     slab.position.set(0, -6.5, -4.4);
-    this.scene.add(slab);
+    this.terrain.add(slab);
     // Thin geological layers give the cutaway a readable ground plane.
     for (let i = 0; i < 5; i++) {
       const layer = new THREE.Mesh(new THREE.BoxGeometry(25.02, 0.025, 3.02), new THREE.MeshStandardMaterial({ color: i % 2 ? 0x8a7458 : 0x4d4435, roughness: 1 }));
       layer.position.set(0, -1.5 - i * 2.5, -4.4);
-      this.scene.add(layer);
+      this.terrain.add(layer);
     }
     const surface = new THREE.Mesh(new THREE.BoxGeometry(25.2, 0.22, 6.5), new THREE.MeshStandardMaterial({ map: texture, color: 0x627563, roughness: 1 }));
     surface.position.set(0, 0.2, -2.6);
-    this.scene.add(surface);
+    this.terrain.add(surface);
     const grassGeometry = new THREE.BufferGeometry();
     const blades: number[] = [];
     for (let i = 0; i < 200; i++) {
@@ -171,12 +179,12 @@ export class ColonyScene {
       blades.push(x, 0.31, z, x + Math.sin(i) * 0.2, 0.31 + h, z - 0.1);
     }
     grassGeometry.setAttribute('position', new THREE.Float32BufferAttribute(blades, 3));
-    this.scene.add(new THREE.LineSegments(grassGeometry, new THREE.LineBasicMaterial({ color: 0x8b9f76, transparent: true, opacity: 0.6 })));
+    this.terrain.add(new THREE.LineSegments(grassGeometry, new THREE.LineBasicMaterial({ color: 0x8b9f76, transparent: true, opacity: 0.6 })));
     const dust = new Float32Array(260 * 3);
     for (let i = 0; i < 260; i++) { dust[i * 3] = Math.sin(i * 53.2) * 15; dust[i * 3 + 1] = Math.cos(i * 39.1) * 9 - 4; dust[i * 3 + 2] = Math.sin(i * 41.7) * 7 - 4; }
     const dustGeo = new THREE.BufferGeometry();
     dustGeo.setAttribute('position', new THREE.BufferAttribute(dust, 3));
-    this.scene.add(new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0xafbba7, size: 0.025, transparent: true, opacity: 0.3, depthWrite: false })));
+    this.terrain.add(new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0xafbba7, size: 0.025, transparent: true, opacity: 0.3, depthWrite: false })));
   }
 
   private makeLabels(): void {
@@ -260,14 +268,6 @@ export class ColonyScene {
       group.add(bowl);
       const lip = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.055, 5, 48), this.rimMaterial);
       lip.scale.set(1.3, 0.72, 1); group.add(lip);
-      if (node.id === 1) {
-        for (let i = 0; i < 9; i++) {
-          const egg = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), new THREE.MeshStandardMaterial({ color: 0xe3dfc3, roughness: 0.8 }));
-          egg.scale.set(0.75, 1.6, 0.8);
-          egg.position.set(Math.sin(i * 2.4) * 0.25, Math.cos(i * 2.4) * 0.12 - 0.12, -0.14);
-          egg.rotation.z = i; group.add(egg);
-        }
-      }
       group.position.copy(vector(node.position)); this.nest.add(group); this.chambers.set(node.id, group);
     }
   }
@@ -320,8 +320,14 @@ export class ColonyScene {
     this.contactPoints.geometry.setDrawRange(0, contactCount); this.contactPoints.geometry.attributes.position.needsUpdate = true;
   }
 
-  update(snapshot: ColonySnapshot, state: UIState, delta: number): void {
+  update(snapshot: ColonySnapshot, state: UIState, delta: number, life?: LifecycleSnapshot): void {
+    if (this.measuredEnabled) { this.updateMeasured(state, delta); return; }
     this.snapshot = snapshot;
+    this.biology.visible = Boolean(life);
+    if (life) {
+      this.biology.position.copy(vector(snapshot.nodes[1]?.position ?? { x: 0, y: -2.3, z: 0 }));
+      this.biology.update(life);
+    }
     if (this.frame++ % 5 === 0) this.syncNest(snapshot);
     this.drawAnts(snapshot.ants, snapshot.stats.elapsed, state.selectedAnt, state.signals);
     this.signalGroup.visible = state.signals;
@@ -339,7 +345,16 @@ export class ColonyScene {
     if (state.view !== this.mode) { this.mode = state.view; this.transition = 1; this.controls.enabled = state.view === 'orbit'; }
     const ant = snapshot.ants.find(a => a.id === state.selectedAnt);
     const mobile = this.container.clientWidth < 720;
-    if (state.view === 'follow' && ant) {
+    if (state.view === 'queen') {
+      const p = this.biology.position.clone();
+      this.targetPosition.copy(p).add(new THREE.Vector3(0.25, 0.55, mobile ? 6.6 : 4.9));
+      this.targetLook.copy(p).add(new THREE.Vector3(mobile ? 0 : 0.15, mobile ? 0.75 : -0.1, 0));
+      this.camera.position.lerp(this.targetPosition, 1 - Math.exp(-delta * 3.8));
+      this.followLook.lerp(this.targetLook, 1 - Math.exp(-delta * 5));
+      this.camera.lookAt(this.followLook);
+      this.antLight.position.copy(p).add(new THREE.Vector3(0, 1, 2));
+      this.antLight.intensity = 4;
+    } else if (state.view === 'follow' && ant) {
       const p = vector(ant.position);
       this.targetPosition.copy(p).add(new THREE.Vector3(0.6, 0.7, 3));
       this.targetLook.copy(p).addScaledVector(vector(ant.heading), 0.3);
@@ -365,6 +380,34 @@ export class ColonyScene {
     this.renderer.render(this.scene, this.camera);
   }
 
+  showStudy(enabled: boolean, data: MeasuredStudy | null, index: number): void {
+    if (enabled !== this.measuredEnabled) { this.transition = 1; this.mode = 'cutaway'; }
+    this.measuredEnabled = enabled;
+    for (const object of [this.terrain, this.nest, this.signalGroup, this.ants, this.cargo, this.legs, this.food, this.biology]) object.visible = !enabled;
+    this.selection.visible = false;
+    this.labels.forEach(label => { if (enabled) label.style.display = 'none'; });
+    if (data && !this.measured) { this.measured = new MeasuredView(data); this.scene.add(this.measured); }
+    if (this.measured) { this.measured.visible = enabled; this.measured.setFrame(index); }
+  }
+
+  private updateMeasured(state: UIState, delta: number): void {
+    const orbit = state.view === 'orbit';
+    if (this.mode !== state.view) { this.mode = state.view; this.transition = 1; }
+    this.controls.enabled = orbit;
+    this.antLight.intensity = 0;
+    if (!orbit || this.transition > 0.01) {
+      const mobile = this.container.clientWidth < 720;
+      const distance = mobile ? 43 : Math.max(23, this.container.clientHeight * 18 / (0.75 * (this.container.clientWidth - 250)));
+      this.targetPosition.set(orbit ? 13 : 4, 1, distance);
+      this.targetLook.set(mobile ? 0 : 1, -5, 0);
+      this.camera.position.lerp(this.targetPosition, 1 - Math.exp(-delta * 4));
+      this.controls.target.lerp(this.targetLook, 1 - Math.exp(-delta * 4));
+      this.camera.lookAt(this.controls.target);
+      this.transition *= Math.exp(-delta * 4);
+    } else this.controls.update();
+    this.renderer.render(this.scene, this.camera);
+  }
+
   private updateLabels(snapshot: ColonySnapshot, view: ViewMode): void {
     const frontier = snapshot.tunnels.find(t => t.progress < 0.95);
     const lastNode = frontier ? snapshot.nodes.find(n => n.id === frontier.to) : snapshot.nodes.at(-1);
@@ -372,7 +415,7 @@ export class ColonyScene {
     points.forEach((point, i) => {
       point.project(this.camera);
       const label = this.labels[i];
-      label.style.display = view === 'follow' || point.z > 1 || (this.container.clientWidth < 720 && i === 1) ? 'none' : 'block';
+      label.style.display = view === 'follow' || view === 'queen' || point.z > 1 || (this.container.clientWidth < 720 && i === 1) ? 'none' : 'block';
       label.style.transform = `translate(${(point.x * 0.5 + 0.5) * this.container.clientWidth}px,${(-point.y * 0.5 + 0.5) * this.container.clientHeight}px)`;
     });
   }
@@ -394,6 +437,7 @@ export class ColonyScene {
     this.renderer.setSize(width, height);
     this.camera.aspect = width / Math.max(1, height);
     this.camera.updateProjectionMatrix();
+    this.transition = 1;
   }
 
   private disposeGroup(group: THREE.Group): void {

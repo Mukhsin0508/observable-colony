@@ -4,7 +4,10 @@
 
 How does a colony build and organize a home when no individual has the whole plan?
 
-Observable Colony is an interactive Three.js observatory built around that question. Explore a growing nest, follow an individual worker, and reveal the scent trails that guide foragers.
+Observable Colony is an interactive **Three.js** experience with two distinct views:
+
+- **Living colony:** begin with one queen and no workers. Follow eggs through larvae and pupae into the first workforce, then explore growth, winged reproductives and an optional queen-loss scenario. This is an illustrative, research-informed model.
+- **Measured excavation:** inspect grain coordinates and the recorded removal sequence from Experiment 1 of a published **Pogonomyrmex occidentalis** excavation study. This view uses archived experimental data, not the lifecycle simulation.
 
 ## Run locally
 
@@ -19,28 +22,36 @@ Open the local address printed by Vite. The application runs in the browser; no 
 
 ```sh
 npm run build   # Type-check and build the production bundle
-npm test        # Run simulation tests
+npm test        # Run model and data validation tests
 npm run preview
 ```
 
-## Explore
+## Explore the living colony
 
-- Watch workers excavate and carry material through the nest.
-- Switch between a cutaway, an orbiting view and a camera following an ant.
-- Reveal the model's surface and underground pheromone trails.
-- Relocate food and watch old trails fade as foragers search.
-- Pause, accelerate or restart the experiment.
+- Choose a chapter from founding to the next generation, or play through model time.
+- Visit the queen and see a representative sample of developing brood.
+- Follow a worker, inspect the nest in cutaway, or orbit around it.
+- Reveal the surface pheromone field. Returning food carriers deposit scent; searching ants steer from local samples while continuing to explore.
+- Move the food. Ants are not told its new location: they must discover it nearby, while the old trail fades.
+- Apply **Queen loss** to stop new egg laying, then watch existing brood and worker cohorts change. **Restore queen** is a counterfactual control, not a natural replacement mechanism.
+- Pause, accelerate or restart the journey. Chapter selection pauses at that point. Devices requesting reduced motion start paused.
 
-The opening view has already run for six minutes of model time so there is a nest to explore. **Restart colony** returns to the small starter nest. Devices requesting reduced motion start paused; press Play to begin.
+Population counts come from a seeded cohort model. The scene draws at most **110 representative workers** and a limited brood sample, so a modeled colony with thousands of ants stays usable on a laptop or phone. These drawn ants are not a one-to-one record of every modeled adult.
 
-Built with **Three.js, TypeScript and Vite**. A seeded simulation runs separately from the renderer. Surface foragers steer using three nearby scent samples and detect food by proximity; returning workers reinforce a decaying trail.
+## Inspect the recorded excavation
+
+Switch to **Measured excavation**, then use the scan slider, previous/next buttons or playback. Orbit to inspect the spatial pattern. The included Experiment 1 sequence contains **52 scan-sequence frames** and **5,174 image-derived grain removals**. Every removed grain is included; retained-grain context is thinned for browser performance.
+
+Dots show grain centroids from the initial image-derived coordinates. Their sizes, colors and display scale are illustrative; they are not reconstructed grain surfaces. The bright points identify removals assigned to the selected scan, while earlier removals remain visible. Scan playback is a presentation of discrete observations, not a recording of individual ants, their decisions, or a colony's lifetime.
+
+The underlying CaltechDATA archive is released under **CC0**. See the [data provenance and conversion notes](docs/measured-data.md) for the source, units, chronology and processing boundaries.
 
 ## What the science means here
 
-This first version is a **research-inspired educational model**, combining ideas from studies of different ant species. It is not a quantitative digital twin, a recorded colony, or a reconstruction of an observed nest.
+The lifecycle is framed around the western harvester ant, **Pogonomyrmex occidentalis**. Its stage durations, population rates, nest geometry and individual behavior remain authored simplifications. They have not been fitted to the archived excavation experiment. Some behavior concepts come from studies of other species and are identified as such in the notes.
 
-It starts with **65 workers in an existing starter nest**, then extends its passages. It does not yet model a queen founding a colony. Geometry, worker roles and speeds are authored choices. Return navigation uses simplified homing and paths through the known tunnel graph. Encounters are counted, but do not regulate behavior. Glowing pheromones and the clock are visual model values, not biological measurements.
+The model has real state changes: brood cohorts mature, workers appear and age out, digging advances passages, and deposited scent affects surface steering. That makes it an interactive explanation; it does not make it a validated digital twin. Global return paths and simplified homing remain engineering conveniences. Contacts are proximity counts and do not control excavation. Queen loss is an intervention, never a predicted natural lifespan.
 
-Read the [research notes](docs/research.md) for the papers, the species they studied, and the boundary between their findings and this implementation.
+Read the [research overview](docs/research.md), [lifecycle evidence and parameters](docs/lifecycle.md), and [measured-data notes](docs/measured-data.md). The next scientific step is to calibrate a narrowly defined mechanism against one experimental setting and compare repeated seeded runs with its measurements.
 
-Next: select one species and monitored experiment, calibrate its behavior, and compare repeated simulations with the published measurements.
+Built with **Three.js, TypeScript and Vite**, with separate lifecycle, movement, rendering and archive-loading modules.
