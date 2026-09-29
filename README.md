@@ -69,7 +69,7 @@ GitHub Actions runs `npm ci`, `npm test` and `npm run build` on pushes and pull 
 | **Space** | Pause or resume when a form control is not focused |
 | **← / →** | Browse guided chapters when a form control is not focused |
 | **Escape** | Leave the journey and Focus mode; close the research dialog when open |
-| Measured-view scan slider and arrows | Browse the archived excavation sequence |
+| Measured-view scan slider and arrows | Browse the archived excavation sequence; height, width and depth of the dig update per scan |
 
 Selecting a lifecycle stage outside the guided journey pauses at that point. Devices requesting reduced motion start paused, with guided autoplay off. The Inside worker camera is an explanatory view, not a reconstruction of ant vision. Surface scent sensors are inactive underground.
 
@@ -83,7 +83,7 @@ The dataset authors are Robert Buarque de Macedo, Edward Ando, Shilpa Joy, Gioac
 
 The browser subset includes **12,329 grain-centroid points** across **52 scan-sequence frames**. All **5,174 removed grains** are retained; never-removed context is thinned for performance. Bright points identify removals assigned to the selected scan, while earlier removals remain visible.
 
-Coordinates retain the source voxel units. Scan numbers indicate observation order; exact timestamps and a physical length conversion have not been established for these input files. Point sizes, colors and display scale are illustrative. The view does not reconstruct grain surfaces, individual removal instants or ant trajectories.
+Coordinates retain the source voxel units in the data file. The measured view reports excavation height, width and depth in millimetres using the supplement's 140 µm scan voxel (0.14 mm), a scale confirmed by the ~92 mm span of the soil sample; see the [conversion notes](docs/measured-data.md#time-and-length-units). Scan numbers indicate observation order; exact timestamps have not been established. Point sizes, colors and display scale are illustrative. The view does not reconstruct grain surfaces, individual removal instants or ant trajectories.
 
 To rebuild the included JSON from the archive, use Python 3 and curl:
 

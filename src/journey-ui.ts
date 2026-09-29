@@ -20,7 +20,11 @@ export interface StudyViewState {
   note: string;
   sourceUrl: string;
   volumeHistory?: number[];
+  /** Span of removed-grain centroids in millimetres, when any grain has been removed. */
+  extent?: { widthMm: number; depthMm: number; heightMm: number };
 }
+
+export const formatMillimetres = (value: number): string => `${value < 10 ? value.toFixed(1) : Math.round(value)} mm`;
 
 const arrow = (direction: 'left' | 'right'): string => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${direction === 'left' ? 'M19 12H5m5-5-5 5 5 5' : 'M5 12h14m-5-5 5 5-5 5'}"/></svg>`;
 
@@ -65,6 +69,11 @@ export class JourneyUI {
         <h2 id="journey-study-label">Archived excavation</h2>
         <p class="journey-study-status" id="journey-study-status" role="status">Loading archived scans…</p>
         <div class="journey-study-metric"><span id="journey-metric-label">Measured value</span><strong id="journey-metric-value">—</strong></div>
+        <div class="journey-study-extent" id="journey-study-extent" hidden>
+          <span>Excavation size</span>
+          <dl><div><dt>Height</dt><dd id="journey-extent-height">—</dd></div><div><dt>Width</dt><dd id="journey-extent-width">—</dd></div><div><dt>Depth</dt><dd id="journey-extent-depth">—</dd></div></dl>
+          <small>Span of removed-grain centres at 0.14 mm per voxel (SI Appendix). The soil sample is about 92 mm across.</small>
+        </div>
         <figure id="journey-study-chart" class="journey-study-chart" hidden><svg viewBox="0 0 240 55" preserveAspectRatio="none" role="img" aria-label="Measured value across the archived scans"><path id="journey-chart-line" d=""/><circle id="journey-chart-marker" cx="0" cy="0" r="3"/></svg><figcaption>Across the archived scans</figcaption></figure>
         <p class="journey-study-note" id="journey-study-note"></p>
         <a class="journey-source-link" id="journey-study-source" target="_blank" rel="noopener noreferrer" hidden>Source dataset <span aria-hidden="true">↗</span></a>
@@ -141,6 +150,11 @@ export class JourneyUI {
     this.setText('journey-metric-label', study.metricLabel || 'Measured value');
     this.setText('journey-metric-value', hasData ? study.metricValue || '—' : '—');
     this.setText('journey-study-note', study.note);
+    const extent = hasData ? study.extent : undefined;
+    this.element('journey-study-extent').hidden = !extent;
+    this.setText('journey-extent-height', extent ? formatMillimetres(extent.heightMm) : '—');
+    this.setText('journey-extent-width', extent ? formatMillimetres(extent.widthMm) : '—');
+    this.setText('journey-extent-depth', extent ? formatMillimetres(extent.depthMm) : '—');
     this.setText('journey-scan-number', hasData ? `${index + 1} / ${frameCount}` : '—');
     this.setText('journey-scan-time', hasData ? study.timeLabel : study.label === 'Archive unavailable' ? 'Archive unavailable' : 'Waiting for data');
     this.studyRange.max = String(Math.max(0, frameCount - 1));

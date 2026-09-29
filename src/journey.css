@@ -78,3 +78,21 @@ body[data-mode="measured"] .measured-caption{display:block}
   .journey-study-note{max-height:80px}
   .journey-study-panel>.journey-model-note{margin-top:9px;padding-top:8px}
 }
+/* Measured excavation size: millimetres come from the cited 0.14 mm voxel. */
+.journey-study-extent{margin-top:16px;padding-top:14px;border-top:1px solid #b2c9ba24}
+.journey-study-extent>span{font:8px/1.5 monospace;letter-spacing:.8px;color:#91aba1;text-transform:uppercase}
+.journey-study-extent dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:9px 0 8px}
+.journey-study-extent dl>div{display:flex;flex-direction:column-reverse;gap:5px}
+.journey-study-extent dt{font-size:9px;color:#91aba1}
+.journey-study-extent dd{margin:0;font:17px/1.1 Georgia,'Times New Roman',serif;color:#e4ebe6;font-variant-numeric:tabular-nums;white-space:nowrap}
+.journey-study-extent small{display:block;font-size:9px;line-height:1.55;color:#a3bbaa}
+.dimension-label{position:absolute;top:0;left:0;padding:3px 7px;border:1px solid #d3b99259;border-radius:3px;background:#172b30d9;color:#e9d3ad;font:10px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.6px;white-space:nowrap;pointer-events:none;font-variant-numeric:tabular-nums;will-change:transform}
+@media(max-width:560px){
+  .journey-study-extent{margin-top:12px;padding-top:11px}
+  .journey-study-extent>span{font-size:8px;letter-spacing:.4px}
+  .journey-study-extent dl{gap:6px;margin:7px 0 0}
+  .journey-study-extent dd{font-size:13px}
+  .journey-study-extent dt{font-size:8px}
+  .journey-study-extent small{display:none}
+  .dimension-label{font-size:9px;padding:2px 5px}
+}

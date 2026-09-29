@@ -38,7 +38,13 @@ The deposited author code explains the mapping: `Preprocess/XRCT2LSDEM/LevelSetC
 
 `scan` is the **original zero-based removal-table column**, not an inferred frame number or elapsed minute. `minutes` is deliberately `null` for every frame. The paper describes repeated acquisition, but the archived image inventory contains gaps and we have not established the exact timestamp mapping for each table column. The interface must say **scan sequence** and must not turn the slider into hours, days or a colony lifespan.
 
-Coordinates remain in **source voxel units**. Related author plotting code uses 0.14 mm per voxel, but its mapping to these exact input files has not been independently established. No unverified conversion to millimeters is applied. Source Z is treated as height by the author's analysis; a renderer may rotate or translate the view without changing stored coordinates.
+Stored coordinates remain in **source voxel units**. The interface converts spans to millimetres at **0.14 mm per voxel**:
+
+- The SI Appendix (p. 2, "Experimental Procedure") states that the time-series scans were half-resolution with a **140 µm voxel edge**, after an initial 70 µm high-resolution scan.
+- Check: Experiment 1 centroids in `positions_image.dat` span about 656 × 661 × 656 voxels, which is **91.9 × 92.6 × 91.9 mm** at 0.14 mm. That matches 500 mL of soil in the paper's frustum (11.4 cm tall, 7–9.8 cm diameter). At 70 µm the sample would be an impossible ~46 mm.
+- The authors' LS-DEM driver uses a density parameter equal to 2650 kg/m³ at 0.14 mm voxels, and their plotting code uses 0.14 mm per voxel.
+
+The measured view's **Height, Width and Depth** readouts are the axis-aligned span of **removed-grain centroids** up to the selected scan (source X = width, Y = depth, Z = height). They are centroid spans, not a traced tunnel wall; the open void extends roughly one grain radius (~1 mm) further. Width and depth reach the container's full ~92 mm within the first dozen scans because the surface layer is disturbed across the whole sample; height is the informative growth measure (≈5 mm at scan 2, ≈59 mm at scan 19, ≈92 mm by scan 29). Source Z is treated as height by the author's analysis; a renderer may rotate or translate the view without changing stored coordinates.
 
 ## JSON contract
 

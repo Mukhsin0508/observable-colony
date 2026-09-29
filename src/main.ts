@@ -18,7 +18,10 @@ const lifecycle = new ColonyLifecycle(1709);
 const expedition = new Expedition();
 simulation.setPopulation(0);
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const state: UIState = { paused: reducedMotion, speed: 1, signals: true, view: 'queen', selectedAnt: null };
+// The colony opens on the whole nest in Orbit at 12x so growth is visible immediately.
+const DEFAULT_VIEW: ViewMode = 'orbit';
+const DEFAULT_SPEED = 12;
+const state: UIState = { paused: reducedMotion, speed: DEFAULT_SPEED, signals: true, view: DEFAULT_VIEW, selectedAnt: null };
 let mode: 'colony' | 'measured' = 'colony';
 let study: MeasuredStudy | null = null;
 let studyIndex = 0;
@@ -103,7 +106,7 @@ function restart(): void {
   stopExpedition();
   if (mode === 'measured') { studyIndex = 0; scene?.showStudy(true, study, studyIndex); return; }
   lifecycle.reset(); simulation.reset(); simulation.setPopulation(0);
-  state.selectedAnt = null; state.view = 'queen';
+  state.selectedAnt = null; state.view = DEFAULT_VIEW;
 }
 
 function togglePause(): void {

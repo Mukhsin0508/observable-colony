@@ -95,7 +95,7 @@ def extract(source_dir: Path, destination: Path) -> dict[str, int]:
             ],
             'mapping': 'Original grain id i uses positions row i-1 and removal row i. Coordinates copied unchanged from the image input, not equilibrated simulation frames.',
             'sourceCoordinateAxes': 'Original X,Y,Z; author analyses treat Z as height. Display rotation/translation is separate from stored data.',
-            'coordinateScale': 'No physical scale conversion applied; author plotting code uses 0.14 mm per voxel in related geometry analysis, but mapping to these exact input files has not been independently established.',
+            'coordinateScale': 'Stored values are source voxels. 0.14 mm per voxel: SI Appendix p.2 gives 140 um voxels for the half-resolution time-series scans; the ~656-voxel centroid span equals ~92 mm, matching the 500 mL soil fill of the 7-9.8 cm frustum.',
             'timeInterpretation': 'scan is the 0-based source removal-table column. Sequence only: minutes intentionally null because exact acquisition timestamp mapping is not established.',
             'excludedRows': 'Removal row 0 is the background label. Grain IDs 1–29 are already absent at baseline. Position rows beyond mapped grain ID 55285 are not used.',
             'excludedColumns': 'Source columns 0 and 1 duplicate baseline. Use 1–52. Column53 resets all observed removals and is excluded as an inconsistent trailing column.',

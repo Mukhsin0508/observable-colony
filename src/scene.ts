@@ -36,6 +36,8 @@ export class ColonyScene {
   private readonly chamberMaterial: THREE.MeshStandardMaterial;
   private readonly rimMaterial = new THREE.MeshStandardMaterial({ color: 0x715136, roughness: 1 });
   private readonly labels: HTMLElement[] = [];
+  private readonly dimensionLabels: HTMLElement[] = [];
+  private readonly projected = new THREE.Vector3();
   private readonly surfaceTrail: THREE.Points;
   private readonly trailPositions = new Float32Array(2000 * 3);
   private readonly trailColors = new Float32Array(2000 * 3);
@@ -207,6 +209,11 @@ export class ColonyScene {
       const label = document.createElement('span');
       label.className = 'world-label'; label.textContent = text;
       holder.append(label); this.labels.push(label);
+    }
+    for (let i = 0; i < 3; i++) {
+      const label = document.createElement('span');
+      label.className = 'dimension-label'; label.style.display = 'none';
+      holder.append(label); this.dimensionLabels.push(label);
     }
   }
 
@@ -411,6 +418,7 @@ export class ColonyScene {
     this.labels.forEach(label => { if (enabled) label.style.display = 'none'; });
     if (data && !this.measured) { this.measured = new MeasuredView(data); this.scene.add(this.measured); }
     if (this.measured) { this.measured.visible = enabled; this.measured.setFrame(index); }
+    if (!enabled) this.dimensionLabels.forEach(label => { label.style.display = 'none'; });
   }
 
   private updateMeasured(state: UIState, delta: number): void {
@@ -428,7 +436,26 @@ export class ColonyScene {
       this.camera.lookAt(this.controls.target);
       this.transition *= Math.exp(-delta * 4);
     } else this.controls.update();
+    this.updateDimensionLabels();
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /** Project the measured-span labels onto the dimension lines drawn by MeasuredView. */
+  private updateDimensionLabels(): void {
+    const width = this.container.clientWidth, height = this.container.clientHeight;
+    this.measured?.setDimensionsEnabled(width >= 560);
+    const labels = this.measured?.visible ? this.measured.dimensionLabels() : [];
+    this.camera.updateMatrixWorld();
+    this.dimensionLabels.forEach((element, i) => {
+      const label = labels[i];
+      if (!label || !this.measured) { if (element.style.display !== 'none') element.style.display = 'none'; return; }
+      this.projected.copy(label.position).applyMatrix4(this.measured.matrixWorld).project(this.camera);
+      const outside = this.projected.z > 1 || this.projected.z < -1 || Math.abs(this.projected.x) > 1.05 || Math.abs(this.projected.y) > 1.05;
+      element.style.display = outside ? 'none' : 'block';
+      if (outside) return;
+      if (element.textContent !== label.text) element.textContent = label.text;
+      element.style.transform = `translate(${((this.projected.x * 0.5 + 0.5) * width).toFixed(1)}px,${((-this.projected.y * 0.5 + 0.5) * height).toFixed(1)}px) ${label.align === 'left' ? 'translate(8px,-50%)' : 'translate(-50%,-50%)'}`;
+    });
   }
 
   private updateLabels(snapshot: ColonySnapshot, view: ViewMode): void {
